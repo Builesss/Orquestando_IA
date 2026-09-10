@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupSecurityMiddleware } from './middleware/securityMiddleware.js';
-import { ipBlockerMiddleware, globalRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import routes from './routes/index.js';
 import { logger } from './utils/logger.js';
@@ -15,9 +14,6 @@ const app = express();
 // 1. Capas de Seguridad Principales (Helmet, CORS)
 setupSecurityMiddleware(app);
 
-// 2. Middleware de Bloqueo de IPs y Rate Limiting Global
-app.use(ipBlockerMiddleware);
-app.use('/api', globalRateLimiter);
 
 // 3. Parseo del cuerpo de peticiones con límites de tamaño para prevenir DoS
 app.use(express.json({ limit: '5mb' }));
