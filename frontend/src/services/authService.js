@@ -49,6 +49,29 @@ export const authService = {
     }
   },
 
+  async updateProfile(profileData) {
+    try {
+      const response = await api.put('/auth/profile', profileData);
+      const data = response.data?.data || response.data;
+      const updatedUser = data?.user || data;
+      const newToken = data?.token || response.data?.token;
+
+      if (newToken) {
+        localStorage.setItem('token', newToken);
+      }
+      if (updatedUser) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      return { user: updatedUser, token: newToken };
+    } catch (error) {
+      console.error('Error al actualizar perfil en /api/auth/profile:', error?.response?.data || error.message);
+      if (error?.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  },
+
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

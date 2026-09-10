@@ -17,6 +17,17 @@ import { ToastContainer } from './components/common/Toast';
 function AppContent() {
   const [currentView, setCurrentView] = useState('feed'); // 'feed' | 'manager'
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [targetUser, setTargetUser] = useState(null);
+
+  const handleOpenProfile = (userObj = null) => {
+    setTargetUser(userObj);
+    setIsProfileOpen(true);
+  };
+
+  const handleCloseProfile = () => {
+    setIsProfileOpen(false);
+    setTargetUser(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0b0e] text-gray-100 flex flex-col selection:bg-pink-500 selection:text-white pb-16 lg:pb-0">
@@ -25,7 +36,7 @@ function AppContent() {
       <Navbar
         currentView={currentView}
         setCurrentView={setCurrentView}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={handleOpenProfile}
       />
 
       {/* Layout Body (Sidebar + Content) */}
@@ -35,7 +46,7 @@ function AppContent() {
         <Sidebar
           currentView={currentView}
           setCurrentView={setCurrentView}
-          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenProfile={handleOpenProfile}
         />
 
         {/* Dynamic Main View */}
@@ -53,14 +64,18 @@ function AppContent() {
       <MobileNav
         currentView={currentView}
         setCurrentView={setCurrentView}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={handleOpenProfile}
       />
 
       {/* Modals & Dialogs */}
       <PostCreationModal />
       <CommentModal />
       <AuthModal />
-      <UserProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <UserProfileModal 
+        isOpen={isProfileOpen} 
+        onClose={handleCloseProfile} 
+        targetUser={targetUser} 
+      />
 
       {/* Toasts de Feedback */}
       <ToastContainer />

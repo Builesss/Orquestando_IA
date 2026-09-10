@@ -80,11 +80,16 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
-  const updateProfile = (updates) => {
+  const updateProfile = async (updates) => {
     if (!user) return;
-    const updated = { ...user, ...updates };
-    setUser(updated);
-    localStorage.setItem('user', JSON.stringify(updated));
+    const result = await authService.updateProfile(updates);
+    if (result?.user) {
+      setUser(result.user);
+    }
+    if (result?.token) {
+      setToken(result.token);
+    }
+    return result;
   };
 
   return (
