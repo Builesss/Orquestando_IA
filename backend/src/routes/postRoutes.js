@@ -8,14 +8,14 @@ const router = Router();
 router.get('/', optionalAuth, postController.getPosts);
 router.get('/:id', optionalAuth, postController.getPostById);
 
-// Creación, edición y eliminación de publicaciones (Protegidas)
-router.post('/', requireAuth, postController.createPost);
-router.put('/:id', requireAuth, postController.updatePost);
-router.delete('/:id', requireAuth, postController.deletePost);
+// Creación, edición y eliminación de publicaciones
+router.post('/', optionalAuth, postController.createPost);
+router.put('/:id', optionalAuth, postController.updatePost);
+router.delete('/:id', optionalAuth, postController.deletePost);
 
-// Acciones especiales sobre publicaciones (Protegidas)
-router.post('/:id/like', requireAuth, postController.toggleLike);
-router.post('/:id/duplicate', requireAuth, postController.duplicatePost);
-router.post('/:id/publish', requireAuth, postController.publishPost);
+// Acciones especiales sobre publicaciones
+router.post('/:id/like', optionalAuth, postController.toggleLike);
+router.post('/:id/duplicate', optionalAuth, postController.duplicatePost);
+router.post('/:id/publish', optionalAuth, postController.publishPost);
 
 export default router;
