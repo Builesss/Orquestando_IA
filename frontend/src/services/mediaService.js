@@ -12,6 +12,7 @@ export const mediaService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 120 segundos para soportar cold starts de Render y procesado de Supabase
       });
 
       const data = response.data?.data || response.data;
