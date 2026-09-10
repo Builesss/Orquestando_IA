@@ -19,16 +19,36 @@ export const AuthProvider = ({ children }) => {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
-        if (storedToken && storedUser) {
-          setUser(JSON.parse(storedUser));
+        if (storedToken && !storedToken.startsWith('mock_') && storedToken !== 'undefined' && storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
           setToken(storedToken);
+
+          // Validar token silenciosamente contra el backend
+          try {
+            const verifiedUser = await authService.getMe();
+            if (verifiedUser) {
+              setUser(verifiedUser);
+            }
+          } catch (verifyErr) {
+            if (verifyErr?.response?.status === 401) {
+              setUser(null);
+              setToken(null);
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+            }
+          }
         } else {
-          // Usuario visitante no autenticado
+          // Limpiar datos simulados o corruptos de sesiones previas
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
           setUser(null);
           setToken(null);
         }
       } catch (e) {
         console.error('Error restaurando sesión:', e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setUser(null);
         setToken(null);
       } finally {
