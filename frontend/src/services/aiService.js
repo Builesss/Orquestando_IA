@@ -1,7 +1,7 @@
 // src/services/aiService.js
 import api from './api';
 
-// Generador inteligente de respuestas IA cuando el backend está en desarrollo
+// Generador inteligente de respuestas IA cuando el backend está en desarrollo o como fallback
 const MOCK_AI_GENERATIONS = {
   creative: [
     "Donde la sinergia entre creatividad humana y algoritmos florece. ✨ Redefiniendo los límites de la narrativa digital un prompt a la vez.",
@@ -45,19 +45,23 @@ export const aiService = {
         keywords,
         current_caption: currentCaption
       });
-      return response.data;
+      const data = response.data?.data || response.data;
+      return {
+        caption: data.caption || data.text || data.generated_caption,
+        suggested_hashtags: data.suggested_hashtags || data.hashtags || []
+      };
     } catch {
       // Simular latencia de red de IA (800ms)
-      await new Promise(resolve => setTimeout(resolve, 900));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       const toneList = MOCK_AI_GENERATIONS[tone] || MOCK_AI_GENERATIONS.creative;
       const selectedCaption = toneList[Math.floor(Math.random() * toneList.length)];
       
       const hashtags = [
-        "#OrquestandoIA",
-        tone === 'professional' ? "#Productivity" : "#Creativity",
-        keywords ? `#${keywords.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')}` : "#AITools",
-        "#SocialMedia"
+        "OrquestandoIA",
+        tone === 'professional' ? "Productivity" : "Creativity",
+        keywords ? `${keywords.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')}` : "AITools",
+        "SocialMedia"
       ].filter(Boolean);
 
       return {
@@ -70,26 +74,26 @@ export const aiService = {
   async suggestHashtags({ caption = '', context = '' }) {
     try {
       const response = await api.post('/ai/suggest-hashtags', { caption, context });
-      return response.data.hashtags;
+      const data = response.data?.data || response.data;
+      return data.hashtags || data.suggested_hashtags || data || [];
     } catch {
       await new Promise(resolve => setTimeout(resolve, 600));
       const tags = [
         ...MOCK_HASHTAGS_BY_KEYWORD.general,
         ...MOCK_HASHTAGS_BY_KEYWORD.creative
       ];
-      // Devolver 6 hashtags aleatorios sin duplicados
-      return Array.from(new Set(tags)).slice(0, 6);
+      return Array.from(new Set(tags)).slice(0, 6).map(t => t.replace('#', ''));
     }
   },
 
   async improveText({ text }) {
     try {
       const response = await api.post('/ai/improve-text', { text });
-      return response.data.improved_text;
+      const data = response.data?.data || response.data;
+      return data.improved_text || data.text || data;
     } catch {
       await new Promise(resolve => setTimeout(resolve, 700));
       if (!text) return "Escribe o ingresa un texto para mejorarlo con el asistente de IA.";
-      // Limpia y añade emojis/estructura
       const cleaned = text.trim();
       return `${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)} ✨\n\n¿Te gustaría ver más contenido como este? ¡Comenta abajo y síguenos para más actualizaciones diarias! 🚀`;
     }
