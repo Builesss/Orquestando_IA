@@ -96,15 +96,16 @@ export const Navbar = ({ currentView, setCurrentView, onOpenProfile }) => {
           {/* User Profile Avatar / Login Button */}
           {isAuthenticated && user ? (
             <button
-              onClick={onOpenProfile}
-              className="flex items-center gap-2 p-1 pl-1 pr-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group"
+              onClick={() => onOpenProfile(user)}
+              className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/30 transition-all group"
+              title="Mi Perfil / Editar Perfil"
             >
               <img
-                src={user.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                src={user.avatar_url || user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
                 alt={user.username}
-                className="w-7 h-7 rounded-lg object-cover ring-2 ring-pink-500/40"
+                className="w-7 h-7 rounded-lg object-cover ring-2 ring-pink-500/40 group-hover:ring-pink-500"
               />
-              <span className="text-xs font-semibold text-gray-200 group-hover:text-white hidden lg:inline max-w-[90px] truncate">
+              <span className="text-xs font-semibold text-gray-200 group-hover:text-pink-300 hidden sm:inline max-w-[100px] truncate">
                 @{user.username}
               </span>
             </button>

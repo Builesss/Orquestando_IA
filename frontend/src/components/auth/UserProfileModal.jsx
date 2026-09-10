@@ -25,9 +25,11 @@ export const UserProfileModal = ({ isOpen, onClose, targetUser = null, initialEd
 
   const viewedUser = targetUser || currentUser;
   const isOwnProfile = Boolean(
-    currentUser && viewedUser && (
-      (currentUser.id && viewedUser.id && currentUser.id === viewedUser.id) ||
-      (!targetUser && currentUser)
+    currentUser && (
+      !targetUser ||
+      (currentUser.id && targetUser.id && String(currentUser.id) === String(targetUser.id)) ||
+      (currentUser.username && targetUser.username && currentUser.username.toLowerCase() === targetUser.username.toLowerCase()) ||
+      (currentUser.email && targetUser.email && currentUser.email.toLowerCase() === targetUser.email.toLowerCase())
     )
   );
 

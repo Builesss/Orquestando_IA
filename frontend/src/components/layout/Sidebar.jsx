@@ -8,7 +8,9 @@ import {
   FolderKanban, 
   Clock, 
   Zap,
-  LogIn
+  LogIn,
+  User,
+  Edit3
 } from 'lucide-react';
 
 export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
@@ -107,6 +109,21 @@ export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
             </span>
           )}
         </button>
+
+        {isAuthenticated && (
+          <button
+            onClick={() => onOpenProfile(user)}
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <User className="w-4 h-4 text-gray-400" />
+              <span>Mi Perfil</span>
+            </div>
+            <span className="text-[10px] font-bold text-pink-400 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
+              Editar
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Filtros Rápidos de Estado (Solo si está autenticado) */}
@@ -192,14 +209,26 @@ export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
       {/* Tarjeta inferior: Stats si está logueado o CTA de Login si es visitante */}
       {isAuthenticated && user ? (
         <div className="mt-auto p-3.5 rounded-2xl bg-gray-900/60 border border-white/5">
-          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-300">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Créditos IA</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-300">
+              <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Créditos IA</span>
+            </div>
+            <button
+              onClick={() => onOpenProfile(user, true)}
+              className="text-[10px] font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1"
+            >
+              <Edit3 className="w-3 h-3" />
+              <span>Editar</span>
+            </button>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2 overflow-hidden">
             <div className="bg-gradient-to-r from-pink-500 to-purple-500 h-1.5 rounded-full w-[80%]" />
           </div>
-          <div className="flex justify-between items-center text-[10px] text-gray-400">
+          <div 
+            onClick={() => onOpenProfile(user)} 
+            className="flex justify-between items-center text-[10px] text-gray-400 hover:text-gray-200 cursor-pointer pt-1"
+          >
             <span>{user?.ai_credits || 50} disponibles</span>
             <span className="text-pink-400 font-medium">@{user.username}</span>
           </div>

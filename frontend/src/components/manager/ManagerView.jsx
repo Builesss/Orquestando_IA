@@ -11,10 +11,11 @@ import {
   Plus, 
   Layers,
   Lock,
-  LogIn
+  LogIn,
+  Edit3
 } from 'lucide-react';
 
-export const ManagerView = () => {
+export const ManagerView = ({ onOpenProfile }) => {
   const { posts, statusFilter, setStatusFilter, setIsStudioOpen, setEditingPost } = usePosts();
   const { user, isAuthenticated, openAuthModal } = useAuth();
 
@@ -77,16 +78,28 @@ export const ManagerView = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingPost(null);
-            setIsStudioOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-xs shadow-glow-pink self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Post con IA</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {onOpenProfile && (
+            <button
+              onClick={() => onOpenProfile(user, true)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 hover:text-white font-semibold text-xs transition-all"
+            >
+              <Edit3 className="w-4 h-4 text-pink-400" />
+              <span>Editar Perfil</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setEditingPost(null);
+              setIsStudioOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-xs shadow-glow-pink"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Post con IA</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Summary Cards */}

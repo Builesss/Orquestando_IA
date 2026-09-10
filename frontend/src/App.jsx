@@ -18,15 +18,18 @@ function AppContent() {
   const [currentView, setCurrentView] = useState('feed'); // 'feed' | 'manager'
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [targetUser, setTargetUser] = useState(null);
+  const [initialEditMode, setInitialEditMode] = useState(false);
 
-  const handleOpenProfile = (userObj = null) => {
+  const handleOpenProfile = (userObj = null, editMode = false) => {
     setTargetUser(userObj);
+    setInitialEditMode(Boolean(editMode));
     setIsProfileOpen(true);
   };
 
   const handleCloseProfile = () => {
     setIsProfileOpen(false);
     setTargetUser(null);
+    setInitialEditMode(false);
   };
 
   return (
@@ -54,7 +57,7 @@ function AppContent() {
           {currentView === 'feed' ? (
             <FeedView />
           ) : (
-            <ManagerView />
+            <ManagerView onOpenProfile={handleOpenProfile} />
           )}
         </main>
 
@@ -75,6 +78,7 @@ function AppContent() {
         isOpen={isProfileOpen} 
         onClose={handleCloseProfile} 
         targetUser={targetUser} 
+        initialEditMode={initialEditMode}
       />
 
       {/* Toasts de Feedback */}
