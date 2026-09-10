@@ -10,6 +10,8 @@ const normalizePost = (p) => {
     ...p,
     aspect_ratio: p.media_ratio || p.aspect_ratio || '1:1',
     media_ratio: p.media_ratio || p.aspect_ratio || '1:1',
+    media_url: p.media_url || p.mediaUrl || p.url || '',
+    mediaUrl: p.media_url || p.mediaUrl || p.url || '',
     is_liked: p.isLiked !== undefined ? p.isLiked : (p.is_liked || false),
     isLiked: p.isLiked !== undefined ? p.isLiked : (p.is_liked || false),
     likes_count: p.likes_count || 0,
@@ -48,11 +50,9 @@ export const postService = {
 
       const response = await api.get('/posts', { params });
       
-      // Manejar formato { success: true, data: { posts: [...] } } o { posts: [...] }
       const rawPosts = response.data?.data?.posts || response.data?.posts || response.data || [];
       const normalized = rawPosts.map(normalizePost);
 
-      // Si el backend responde vacío en la primera carga, mantener datos locales
       if (normalized.length > 0) {
         return {
           posts: normalized,
@@ -98,12 +98,15 @@ export const postService = {
 
   async createPost(postData) {
     try {
+      const mediaFinalUrl = postData.media_url || postData.mediaUrl;
       const payload = {
         caption: postData.caption,
-        media_url: postData.media_url,
-        media_ratio: postData.aspect_ratio || postData.media_ratio || '1:1',
+        media_url: mediaFinalUrl,
+        mediaUrl: mediaFinalUrl,
+        media_ratio: postData.media_ratio || postData.aspect_ratio || '1:1',
+        aspect_ratio: postData.aspect_ratio || postData.media_ratio || '1:1',
         tone: postData.tone || 'Creativo',
-        hashtags: postData.hashtags || [],
+        hashtags: (postData.hashtags || []).map(h => h.replace('#', '')),
         status: postData.status || 'published',
         scheduled_at: postData.scheduled_at || null
       };
@@ -112,7 +115,11 @@ export const postService = {
       const created = response.data?.data?.post || response.data?.data || response.data?.post || response.data;
       return normalizePost(created);
     } catch (error) {
-      console.warn('Guardando post en fallback local:', error.message);
+      // Si el backend responde con error de validación HTTP 4xx, lo relanzamos
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        throw error;
+      }
+      console.warn('Guardando post en fallback local por error de red:', error.message);
       const posts = getLocalPosts();
       const newPost = normalizePost({
         id: 'post_' + Date.now(),
@@ -132,14 +139,21 @@ export const postService = {
 
   async updatePost(id, updates) {
     try {
+      const mediaFinalUrl = updates.media_url || updates.mediaUrl;
       const payload = {
         ...updates,
-        media_ratio: updates.aspect_ratio || updates.media_ratio
+        media_url: mediaFinalUrl,
+        mediaUrl: mediaFinalUrl,
+        media_ratio: updates.aspect_ratio || updates.media_ratio,
+        aspect_ratio: updates.aspect_ratio || updates.media_ratio
       };
       const response = await api.put(`/posts/${id}`, payload);
       const updated = response.data?.data?.post || response.data?.data || response.data?.post || response.data;
       return normalizePost(updated);
-    } catch {
+    } catch (error) {
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        throw error;
+      }
       const posts = getLocalPosts();
       const updated = posts.map(p => (p.id === id ? normalizePost({ ...p, ...updates }) : p));
       saveLocalPosts(updated);
