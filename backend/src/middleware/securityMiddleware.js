@@ -12,19 +12,27 @@ export const setupSecurityMiddleware = (app) => {
   // CORS configuration
   const allowedOrigins = [
     config.clientUrl,
+    'https://orquestando-ia-sfbn.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:3000'
-  ];
+  ].filter(Boolean);
 
   app.use(cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman) or in allowedOrigins
-      if (!origin || allowedOrigins.indexOf(origin) !== -1 || config.isDev) {
+      // Permitir solicitudes sin origen (apps móviles, curl, postman) o desarrollo
+      if (!origin || config.isDev) {
+        return callback(null, true);
+      }
+
+      // Permitir si coincide exactamente con la lista o es un subdominio de Vercel
+      const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+      
+      if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error('No permitido por CORS'));
+        callback(new Error(`No permitido por CORS: ${origin}`));
       }
     },
     credentials: true,
