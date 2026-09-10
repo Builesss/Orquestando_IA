@@ -1,36 +1,62 @@
-import { config } from '../config/env.js';
+import { getSupabase, isSupabaseConfigured } from '../config/supabase.js';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 
 export const mediaService = {
   /**
-   * Formatear archivo subido y generar URL pública accesible
+   * Formatear archivo subido y subirlo a Supabase Storage
    */
-  processUploadedFile(file, req) {
+  async processUploadedFile(file) {
     if (!file) {
       throw new Error('No se recibió ningún archivo.');
     }
 
-    const host = req.get('host') || `localhost:${config.port}`;
-    const protocol = req.protocol || 'http';
-    const publicUrl = `${protocol}://${host}/uploads/${file.filename}`;
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase no está configurado. No se pueden subir imágenes a la nube.');
+    }
+
+    const supabase = getSupabase();
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const uniqueFilename = `${uuidv4()}${ext}`;
+
+    // Subir el archivo al bucket "posts_media" usando el buffer
+    const { data, error } = await supabase.storage
+      .from('posts_media')
+      .upload(uniqueFilename, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error al subir imagen a Supabase:', error.message);
+      throw new Error(`Error al guardar la imagen en la nube: ${error.message}`);
+    }
+
+    // Obtener la URL pública generada por Supabase
+    const { data: urlData } = supabase.storage
+      .from('posts_media')
+      .getPublicUrl(uniqueFilename);
 
     return {
-      filename: file.filename,
+      filename: uniqueFilename,
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
       sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-      url: publicUrl
+      url: urlData.publicUrl
     };
   },
 
   /**
    * Procesar múltiples archivos subidos
    */
-  processMultipleFiles(files, req) {
+  async processMultipleFiles(files) {
     if (!files || files.length === 0) {
       throw new Error('No se recibieron archivos.');
     }
 
-    return files.map(file => this.processUploadedFile(file, req));
+    // Subir todos los archivos de forma concurrente
+    const uploadPromises = files.map(file => this.processUploadedFile(file));
+    return await Promise.all(uploadPromises);
   }
 };

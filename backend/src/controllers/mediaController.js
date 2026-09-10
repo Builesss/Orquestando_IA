@@ -11,7 +11,8 @@ export const mediaController = {
         return errorResponse(res, 'Por favor selecciona una imagen para subir.', 400);
       }
 
-      const mediaData = mediaService.processUploadedFile(req.file, req);
+      // Ahora es asíncrono
+      const mediaData = await mediaService.processUploadedFile(req.file);
       return successResponse(res, mediaData, 'Imagen subida y procesada exitosamente', 201);
     } catch (error) {
       next(error);
@@ -27,7 +28,8 @@ export const mediaController = {
         return errorResponse(res, 'Por favor selecciona al menos una imagen.', 400);
       }
 
-      const mediaList = mediaService.processMultipleFiles(req.files, req);
+      // Ahora es asíncrono
+      const mediaList = await mediaService.processMultipleFiles(req.files);
       return successResponse(res, mediaList, 'Imágenes subidas y procesadas exitosamente', 201);
     } catch (error) {
       next(error);
