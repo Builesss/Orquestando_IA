@@ -5,10 +5,8 @@ export const mediaService = {
   async uploadImage(file) {
     try {
       const formData = new FormData();
-      // Enviar con 'file' (estándar Multer en backend)
-      formData.append('file', file);
-      // Enviar también con 'image' por compatibilidad
-      formData.append('image', file);
+      // El backend espera exactamente el campo 'media' para Multer y Supabase Storage
+      formData.append('media', file);
 
       const response = await api.post('/media/upload', formData, {
         headers: {
@@ -18,33 +16,32 @@ export const mediaService = {
 
       const data = response.data?.data || response.data;
       
-      // Extraer URL pública generada por Supabase Storage
+      // La URL pública devuelta por Supabase Storage viene en data.url
       const uploadedUrl = 
+        data?.url || 
         data?.media_url || 
         data?.publicUrl || 
         data?.public_url || 
-        data?.url || 
         data?.mediaUrl || 
         data?.image_url || 
         data?.secure_url || 
-        data?.path || 
         (typeof data === 'string' ? data : null);
 
       if (uploadedUrl) {
         return uploadedUrl;
       }
     } catch (err) {
-      console.warn(
+      console.error(
         'Error en subida a /api/media/upload (Supabase Storage):',
         err?.response?.data || err.message
       );
-      // Si el servidor respondió con un error específico, propagar si es relevante
       if (err?.response?.data?.message) {
         throw new Error(err.response.data.message);
       }
+      throw err;
     }
 
-    // Fallback: Si no hay conexión al backend, generar Data URL para previsualización
+    // Fallback Data URL solo en caso extremo sin conexión
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
