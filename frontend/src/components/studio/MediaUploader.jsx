@@ -1,6 +1,6 @@
 // src/components/studio/MediaUploader.jsx
-import React, { useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { UploadCloud, Image as ImageIcon, RefreshCw, Loader2, Link, Check } from 'lucide-react';
 import { mediaService } from '../../services/mediaService';
 
 // Galería de imágenes de muestra para prototipado rápido
@@ -12,14 +12,25 @@ const SAMPLE_PRESETS = [
   "https://images.unsplash.com/photo-1614680376593-902f749f7ffc?w=1080&auto=format&fit=crop&q=85"
 ];
 
-export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRatio }) => {
+export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRatio, isUploading, setIsUploading }) => {
   const fileInputRef = useRef(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [customUrl, setCustomUrl] = useState('');
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = await mediaService.uploadImage(file);
-      setMediaUrl(url);
+      if (setIsUploading) setIsUploading(true);
+      try {
+        const url = await mediaService.uploadImage(file);
+        if (url) {
+          setMediaUrl(url);
+        }
+      } catch (err) {
+        console.error('Error subiendo imagen:', err);
+      } finally {
+        if (setIsUploading) setIsUploading(false);
+      }
     }
   };
 
@@ -27,8 +38,26 @@ export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRat
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      const url = await mediaService.uploadImage(file);
-      setMediaUrl(url);
+      if (setIsUploading) setIsUploading(true);
+      try {
+        const url = await mediaService.uploadImage(file);
+        if (url) {
+          setMediaUrl(url);
+        }
+      } catch (err) {
+        console.error('Error al soltar imagen:', err);
+      } finally {
+        if (setIsUploading) setIsUploading(false);
+      }
+    }
+  };
+
+  const handleApplyCustomUrl = (e) => {
+    e.preventDefault();
+    if (customUrl.trim()) {
+      setMediaUrl(customUrl.trim());
+      setShowUrlInput(false);
+      setCustomUrl('');
     }
   };
 
@@ -37,7 +66,7 @@ export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRat
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
           <ImageIcon className="w-3.5 h-3.5 text-pink-400" />
-          Imagen de la Publicación
+          Imagen Multimedia <span className="text-pink-400">*</span>
         </label>
         
         {/* Selector de Aspect Ratio */}
@@ -63,7 +92,13 @@ export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRat
         </div>
       </div>
 
-      {mediaUrl ? (
+      {isUploading ? (
+        <div className="border-2 border-dashed border-pink-500/50 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-pink-500/5">
+          <Loader2 className="w-8 h-8 text-pink-400 animate-spin mb-2" />
+          <p className="text-xs font-bold text-gray-200">Subiendo y procesando imagen...</p>
+          <p className="text-[10px] text-gray-400">Optimizando formato para el servidor</p>
+        </div>
+      ) : mediaUrl ? (
         <div className="relative rounded-2xl overflow-hidden border border-white/10 group bg-black/40">
           <div className={`w-full ${aspectRatio === '4:5' ? 'aspect-[4/5]' : aspectRatio === '16:9' ? 'aspect-video' : 'aspect-square'} max-h-64 flex items-center justify-center`}>
             <img
@@ -117,19 +152,53 @@ export const MediaUploader = ({ mediaUrl, setMediaUrl, aspectRatio, setAspectRat
         className="hidden"
       />
 
-      {/* Selector rápido de plantillas/fotos curadas */}
-      <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-        <span className="text-[10px] text-gray-400 font-medium shrink-0">Muestras:</span>
-        {SAMPLE_PRESETS.map((preset, idx) => (
+      {/* Selector de URL externa o Muestras */}
+      <div className="flex flex-col gap-2 pt-1">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-gray-400 font-medium">O elige una imagen de muestra:</span>
           <button
-            key={idx}
             type="button"
-            onClick={() => setMediaUrl(preset)}
-            className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-pink-400 shrink-0 transition-transform hover:scale-105"
+            onClick={() => setShowUrlInput(!showUrlInput)}
+            className="text-pink-400 hover:text-pink-300 font-semibold flex items-center gap-1"
           >
-            <img src={preset} alt={`sample-${idx}`} className="w-full h-full object-cover" />
+            <Link className="w-3 h-3" />
+            {showUrlInput ? 'Cerrar URL' : 'Pegar URL'}
           </button>
-        ))}
+        </div>
+
+        {showUrlInput && (
+          <div className="flex items-center gap-2 animate-fade-in">
+            <input
+              type="url"
+              placeholder="https://images.unsplash.com/..."
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-gray-900 border border-white/10 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-pink-500"
+            />
+            <button
+              type="button"
+              onClick={handleApplyCustomUrl}
+              className="px-3 py-1.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" /> Aplicar
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+          {SAMPLE_PRESETS.map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setMediaUrl(preset)}
+              className={`w-9 h-9 rounded-lg overflow-hidden border shrink-0 transition-transform hover:scale-105 ${
+                mediaUrl === preset ? 'border-pink-500 ring-2 ring-pink-500/50' : 'border-white/10 hover:border-pink-400'
+              }`}
+            >
+              <img src={preset} alt={`sample-${idx}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

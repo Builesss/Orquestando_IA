@@ -90,7 +90,12 @@ export const PostProvider = ({ children }) => {
       return newPost;
     } catch (e) {
       console.error(e);
-      showToast('Error al guardar la publicación', 'error');
+      const serverMsg = 
+        e?.response?.data?.message || 
+        (Array.isArray(e?.response?.data?.error) ? e.response.data.error[0] : null) ||
+        e.message || 
+        'Error al guardar la publicación';
+      showToast(serverMsg, 'error');
       throw e;
     }
   };
@@ -105,7 +110,11 @@ export const PostProvider = ({ children }) => {
       return updated;
     } catch (e) {
       console.error(e);
-      showToast('Error al actualizar la publicación', 'error');
+      const serverMsg = 
+        e?.response?.data?.message || 
+        (Array.isArray(e?.response?.data?.error) ? e.response.data.error[0] : null) ||
+        'Error al actualizar la publicación';
+      showToast(serverMsg, 'error');
       throw e;
     }
   };

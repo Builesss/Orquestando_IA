@@ -11,9 +11,7 @@ import {
   Save, 
   Calendar, 
   Hash, 
-  Layers, 
-  Check, 
-  AlertCircle 
+  Loader2
 } from 'lucide-react';
 
 export const PostCreationModal = () => {
@@ -27,14 +25,15 @@ export const PostCreationModal = () => {
   const [status, setStatus] = useState('published'); // 'published', 'draft', 'scheduled'
   const [scheduledAt, setScheduledAt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Cargar datos si estamos editando
   useEffect(() => {
     if (editingPost) {
-      setMediaUrl(editingPost.media_url || '');
+      setMediaUrl(editingPost.media_url || editingPost.mediaUrl || '');
       setCaption(editingPost.caption || '');
       setHashtags(editingPost.hashtags || []);
-      setAspectRatio(editingPost.aspect_ratio || '1:1');
+      setAspectRatio(editingPost.aspect_ratio || editingPost.media_ratio || '1:1');
       setStatus(editingPost.status || 'published');
       setScheduledAt(editingPost.scheduled_at ? editingPost.scheduled_at.slice(0, 16) : '');
     } else {
@@ -69,8 +68,12 @@ export const PostCreationModal = () => {
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!mediaUrl) {
-      showToast('Por favor sube o selecciona una imagen', 'error');
+    if (isUploading) {
+      showToast('Espera a que termine de procesarse la imagen...', 'info');
+      return;
+    }
+    if (!mediaUrl || !mediaUrl.trim()) {
+      showToast('La URL o ruta de la imagen multimedia es obligatoria.', 'error');
       return;
     }
     if (!caption.trim()) {
@@ -81,10 +84,12 @@ export const PostCreationModal = () => {
     setIsSubmitting(true);
     try {
       const payload = {
-        media_url: mediaUrl,
-        caption,
-        hashtags,
+        media_url: mediaUrl.trim(),
+        caption: caption.trim(),
+        hashtags: (hashtags || []).map(h => h.replace('#', '')),
         aspect_ratio: aspectRatio,
+        media_ratio: aspectRatio,
+        tone: 'Creativo',
         status,
         scheduled_at: status === 'scheduled' ? (scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString()) : null
       };
@@ -141,6 +146,8 @@ export const PostCreationModal = () => {
               setMediaUrl={setMediaUrl}
               aspectRatio={aspectRatio}
               setAspectRatio={setAspectRatio}
+              isUploading={isUploading}
+              setIsUploading={setIsUploading}
             />
 
             {/* 2. Orquestador IA Panel */}
@@ -156,7 +163,7 @@ export const PostCreationModal = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-gray-200">
-                  Caption / Texto del Post
+                  Caption / Texto del Post <span className="text-pink-400">*</span>
                 </label>
                 <span className="text-[10px] text-gray-400 font-mono">
                   {caption.length} / 2200 caracteres
@@ -168,6 +175,7 @@ export const PostCreationModal = () => {
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 className="w-full p-3 text-xs rounded-xl bg-gray-900/70 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-pink-500/50 leading-relaxed"
+                required
               />
             </div>
 
@@ -280,12 +288,20 @@ export const PostCreationModal = () => {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting || !mediaUrl}
+            disabled={isSubmitting || isUploading || !mediaUrl}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-glow-pink hover:shadow-glow-purple transition-all active:scale-95"
           >
-            <Sparkles className="w-4 h-4 text-pink-200" />
+            {isSubmitting || isUploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 text-pink-200" />
+            )}
             <span>
-              {editingPost
+              {isSubmitting
+                ? 'Guardando...'
+                : isUploading
+                ? 'Subiendo imagen...'
+                : editingPost
                 ? 'Actualizar Post'
                 : status === 'published'
                 ? 'Lanzar Publicación'
