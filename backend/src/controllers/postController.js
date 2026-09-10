@@ -54,12 +54,7 @@ export const postController = {
         return errorResponse(res, validation.errors.join(' '), 400, validation.errors);
       }
 
-      // If user is authenticated, use user; otherwise use default demo user
-      const user = req.user || {
-        id: '11111111-1111-4111-a111-111111111111',
-        username: 'orquestador_demo',
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-      };
+      const user = req.user;
 
       const newPost = await postService.createPost(user, validation.sanitized);
       return successResponse(res, newPost, 'Publicación creada exitosamente', 201);
@@ -79,7 +74,7 @@ export const postController = {
         return errorResponse(res, validation.errors.join(' '), 400, validation.errors);
       }
 
-      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+      const userId = req.user.id;
       const updatedPost = await postService.updatePost(id, userId, validation.sanitized);
 
       return successResponse(res, updatedPost, 'Publicación actualizada exitosamente');
@@ -100,7 +95,7 @@ export const postController = {
   async deletePost(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+      const userId = req.user.id;
 
       await postService.deletePost(id, userId);
       return successResponse(res, { id }, 'Publicación eliminada correctamente');
@@ -121,7 +116,7 @@ export const postController = {
   async toggleLike(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+      const userId = req.user.id;
 
       const result = await postService.toggleLike(id, userId);
       return successResponse(res, result, result.isLiked ? 'Like agregado' : 'Like eliminado');
@@ -139,11 +134,7 @@ export const postController = {
   async duplicatePost(req, res, next) {
     try {
       const { id } = req.params;
-      const user = req.user || {
-        id: '11111111-1111-4111-a111-111111111111',
-        username: 'orquestador_demo',
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-      };
+      const user = req.user;
 
       const duplicated = await postService.duplicatePost(id, user);
       return successResponse(res, duplicated, 'Borrador duplicado exitosamente', 201);
@@ -161,7 +152,7 @@ export const postController = {
   async publishPost(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+      const userId = req.user.id;
 
       const published = await postService.fastPublish(id, userId);
       return successResponse(res, published, 'Publicación lanzada exitosamente');
