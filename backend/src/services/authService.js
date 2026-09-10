@@ -86,6 +86,46 @@ export const authService = {
   },
 
   /**
+   * Actualizar perfil de usuario
+   */
+  async updateUserProfile(userId, updateData) {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Base de datos no configurada.');
+    }
+
+    const supabase = getSupabase();
+    
+    // Si cambia el username, verificar que no esté en uso
+    if (updateData.username) {
+      const existing = await this.findByUsername(updateData.username);
+      if (existing && existing.id !== userId) {
+        throw new Error('El nombre de usuario ya está en uso por otra persona.');
+      }
+    }
+
+    const updatePayload = {};
+    if (updateData.username) updatePayload.username = updateData.username;
+    if (updateData.bio !== undefined) updatePayload.bio = updateData.bio;
+    if (updateData.avatarUrl !== undefined) updatePayload.avatar_url = updateData.avatarUrl;
+    updatePayload.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error actualizando perfil en Supabase:', error.message);
+      throw new Error('No se pudo actualizar el perfil.');
+    }
+
+    const token = this.generateToken(data);
+    return { user: this.sanitizeUser(data), token };
+  },
+
+  /**
    * Buscar usuario por email
    */
   async findByEmail(email) {

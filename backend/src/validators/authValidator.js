@@ -48,8 +48,44 @@ export const validateLogin = (data) => {
     isValid: errors.length === 0,
     errors,
     sanitized: {
-      emailOrUsername: emailOrUsername ? emailOrUsername.trim().toLowerCase() : '',
-      password: password || '',
+      emailOrUsername: emailOrUsername ? String(emailOrUsername).trim().toLowerCase() : '',
+      password: password || ''
+    }
+  };
+};
+
+/**
+ * Validaciones para actualizar perfil
+ */
+export const validateUpdateProfile = (data) => {
+  const errors = [];
+  const { username, bio, avatarUrl } = data;
+
+  if (username !== undefined) {
+    if (typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 30) {
+      errors.push('El nombre de usuario debe tener entre 3 y 30 caracteres.');
+    } else if (!/^[a-zA-Z0-9_.]+$/.test(username.trim())) {
+      errors.push('El nombre de usuario solo puede contener letras, números, puntos y guiones bajos.');
+    }
+  }
+
+  if (bio !== undefined && typeof bio !== 'string') {
+    errors.push('La biografía debe ser un texto.');
+  } else if (bio && bio.length > 200) {
+    errors.push('La biografía no puede superar los 200 caracteres.');
+  }
+
+  if (avatarUrl !== undefined && typeof avatarUrl !== 'string') {
+    errors.push('La URL del avatar debe ser un texto válido.');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    sanitized: {
+      ...(username !== undefined && { username: username.trim().toLowerCase() }),
+      ...(bio !== undefined && { bio: String(bio).trim().slice(0, 200) }),
+      ...(avatarUrl !== undefined && { avatarUrl: String(avatarUrl).trim() })
     }
   };
 };
