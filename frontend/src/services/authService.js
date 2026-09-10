@@ -1,60 +1,83 @@
 // src/services/authService.js
 import api from './api';
-import { INITIAL_USER } from './mockData';
 
 export const authService = {
   async login(email, password) {
     try {
       const response = await api.post('/auth/login', { email, password });
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      const resData = response.data;
+      const data = resData?.data || resData;
+      const token = data?.token || resData?.token;
+      const user = data?.user || resData?.user || data;
+
+      if (token) {
+        localStorage.setItem('token', token);
       }
-      return response.data;
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      return { user, token };
     } catch (error) {
-      console.warn('API offline o error en login, usando sesión simulada:', error.message);
-      const mockToken = 'mock_jwt_token_' + Date.now();
-      const mockUser = { ...INITIAL_USER, email };
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      return { user: mockUser, token: mockToken };
+      console.error('Error en /auth/login:', error?.response?.data || error.message);
+      if (error?.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
     }
   },
 
   async register(username, email, password) {
     try {
       const response = await api.post('/auth/register', { username, email, password });
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      const resData = response.data;
+      const data = resData?.data || resData;
+      const token = data?.token || resData?.token;
+      const user = data?.user || resData?.user || data;
+
+      if (token) {
+        localStorage.setItem('token', token);
       }
-      return response.data;
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      return { user, token };
     } catch (error) {
-      console.warn('API offline o error en register, usando sesión simulada:', error.message);
-      const mockToken = 'mock_jwt_token_' + Date.now();
-      const mockUser = { ...INITIAL_USER, username, email };
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      return { user: mockUser, token: mockToken };
+      console.error('Error en /auth/register:', error?.response?.data || error.message);
+      if (error?.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
     }
   },
 
   async getMe() {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
       const response = await api.get('/auth/me');
-      return response.data;
-    } catch {
+      const resData = response.data;
+      const user = resData?.data?.user || resData?.data || resData?.user || resData;
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      return user;
+    } catch (error) {
+      console.warn('Error obteniendo datos de /auth/me:', error?.response?.data || error.message);
       const cached = localStorage.getItem('user');
-      return cached ? JSON.parse(cached) : INITIAL_USER;
+      return cached ? JSON.parse(cached) : null;
     }
   },
 
   async updateProfile(profileData) {
     try {
-      const response = await api.put('/auth/profile', profileData);
-      const data = response.data?.data || response.data;
-      const updatedUser = data?.user || data;
-      const newToken = data?.token || response.data?.token;
+      const token = localStorage.getItem('token');
+      const response = await api.put('/auth/profile', profileData, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const resData = response.data;
+      const data = resData?.data || resData;
+      const updatedUser = data?.user || resData?.user || data;
+      const newToken = data?.token || resData?.token || token;
 
       if (newToken) {
         localStorage.setItem('token', newToken);

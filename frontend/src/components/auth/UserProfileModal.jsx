@@ -153,7 +153,12 @@ export const UserProfileModal = ({ isOpen, onClose, targetUser = null, initialEd
       setIsEditing(false);
     } catch (err) {
       console.error('Error al actualizar perfil:', err);
-      setErrorMessage(err.message || 'No se pudo actualizar el perfil. Verifica los datos e intenta nuevamente.');
+      const msg = err?.response?.data?.message || err.message || '';
+      if (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('autorizado') || err?.response?.status === 401) {
+        setErrorMessage('Tu sesión ha expirado o no contiene un token válido. Por favor, cierra sesión e ingresa nuevamente.');
+      } else {
+        setErrorMessage(msg || 'No se pudo actualizar el perfil. Verifica los datos e intenta nuevamente.');
+      }
     } finally {
       setIsSaving(false);
     }
