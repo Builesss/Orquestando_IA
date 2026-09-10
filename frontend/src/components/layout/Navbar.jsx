@@ -3,14 +3,18 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePosts } from '../../context/PostContext';
-import { Sparkles, Plus, Moon, Sun, Search } from 'lucide-react';
+import { Sparkles, Plus, Moon, Sun, Search, LogIn, UserPlus } from 'lucide-react';
 
-export const Navbar = ({ currentView, setCurrentView, onOpenProfile, onOpenAuth }) => {
-  const { user } = useAuth();
+export const Navbar = ({ currentView, setCurrentView, onOpenProfile }) => {
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { setIsStudioOpen, setEditingPost, activeHashtag, setActiveHashtag } = usePosts();
 
   const handleOpenCreate = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para crear publicaciones con IA');
+      return;
+    }
     setEditingPost(null);
     setIsStudioOpen(true);
   };
@@ -89,8 +93,8 @@ export const Navbar = ({ currentView, setCurrentView, onOpenProfile, onOpenAuth 
             {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-400" />}
           </button>
 
-          {/* User Profile Avatar */}
-          {user ? (
+          {/* User Profile Avatar / Login Button */}
+          {isAuthenticated && user ? (
             <button
               onClick={onOpenProfile}
               className="flex items-center gap-2 p-1 pl-1 pr-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group"
@@ -105,12 +109,15 @@ export const Navbar = ({ currentView, setCurrentView, onOpenProfile, onOpenAuth 
               </span>
             </button>
           ) : (
-            <button
-              onClick={onOpenAuth}
-              className="text-xs font-semibold px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-            >
-              Ingresar
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => openAuthModal('Inicia sesión para interactuar')}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                <LogIn className="w-3.5 h-3.5 text-pink-400" />
+                <span>Ingresar</span>
+              </button>
+            </div>
           )}
         </div>
 

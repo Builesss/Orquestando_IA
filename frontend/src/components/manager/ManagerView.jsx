@@ -1,6 +1,7 @@
 // src/components/manager/ManagerView.jsx
 import React from 'react';
 import { usePosts } from '../../context/PostContext';
+import { useAuth } from '../../context/AuthContext';
 import { PostGrid } from './PostGrid';
 import { 
   FolderKanban, 
@@ -8,24 +9,58 @@ import {
   Clock, 
   FileEdit, 
   Plus, 
-  Sparkles,
-  BarChart3,
-  Layers
+  Layers,
+  Lock,
+  LogIn
 } from 'lucide-react';
 
 export const ManagerView = () => {
   const { posts, statusFilter, setStatusFilter, setIsStudioOpen, setEditingPost } = usePosts();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
 
-  const total = posts.length;
-  const published = posts.filter(p => p.status === 'published');
-  const drafts = posts.filter(p => p.status === 'draft');
-  const scheduled = posts.filter(p => p.status === 'scheduled');
+  // Si el usuario no está autenticado, mostrar mensaje para iniciar sesión
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="w-full max-w-2xl mx-auto py-16 px-4 text-center">
+        <div className="glass-card rounded-3xl p-8 border border-white/10 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center mx-auto mb-4 shadow-glow-pink">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-extrabold text-white mb-2">
+            Gestor de Publicaciones Privado
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
+            Inicia sesión o regístrate para gestionar tus borradores, programar publicaciones y acceder a tus métricas.
+          </p>
+          <button
+            onClick={() => openAuthModal('Inicia sesión para ver tu gestor de publicaciones')}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-xs shadow-glow-pink transition-all"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Iniciar Sesión / Registrarse</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Filtrar estrictamente solo las publicaciones creadas por el usuario autenticado
+  const myPosts = posts.filter(p => (
+    (p.user_id && user.id && p.user_id === user.id) ||
+    (p.user?.id && user.id && p.user.id === user.id) ||
+    (p.user?.username && user.username && p.user.username.toLowerCase() === user.username.toLowerCase())
+  ));
+
+  const total = myPosts.length;
+  const published = myPosts.filter(p => p.status === 'published');
+  const drafts = myPosts.filter(p => p.status === 'draft');
+  const scheduled = myPosts.filter(p => p.status === 'scheduled');
 
   const filteredPosts = 
     statusFilter === 'published' ? published :
     statusFilter === 'draft' ? drafts :
     statusFilter === 'scheduled' ? scheduled :
-    posts;
+    myPosts;
 
   return (
     <div className="w-full max-w-5xl mx-auto py-6 px-4">
@@ -35,10 +70,10 @@ export const ManagerView = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
             <FolderKanban className="w-6 h-6 text-pink-500" />
-            Gestor de Publicaciones & Borradores
+            Mis Publicaciones & Borradores
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-            Administra el ciclo de vida de todo tu contenido social orquestado
+            Administra únicamente tus creaciones (@{user.username})
           </p>
         </div>
 
@@ -57,7 +92,7 @@ export const ManagerView = () => {
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Total Posts', count: total, filter: 'all', color: 'border-white/10', icon: Layers, textColor: 'text-white' },
+          { label: 'Mis Posts', count: total, filter: 'all', color: 'border-white/10', icon: Layers, textColor: 'text-white' },
           { label: 'Publicados', count: published.length, filter: 'published', color: 'border-emerald-500/30', icon: Send, textColor: 'text-emerald-400' },
           { label: 'Borradores', count: drafts.length, filter: 'draft', color: 'border-amber-500/30', icon: FileEdit, textColor: 'text-amber-400' },
           { label: 'Programados', count: scheduled.length, filter: 'scheduled', color: 'border-blue-500/30', icon: Clock, textColor: 'text-blue-400' },
@@ -91,10 +126,10 @@ export const ManagerView = () => {
             <FolderKanban className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-bold text-gray-200 mb-1">
-            No se encontraron publicaciones en esta categoría
+            No tienes publicaciones en esta sección
           </h3>
           <p className="text-xs text-gray-400 mb-4">
-            Crea una nueva publicación o cambia el filtro de estado arriba.
+            Crea tu primera publicación con IA o cambia el filtro arriba.
           </p>
           <button
             onClick={() => {

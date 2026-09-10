@@ -16,7 +16,6 @@ import { ToastContainer } from './components/common/Toast';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState('feed'); // 'feed' | 'manager'
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
@@ -27,7 +26,6 @@ function AppContent() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Layout Body (Sidebar + Content) */}
@@ -61,7 +59,7 @@ function AppContent() {
       {/* Modals & Dialogs */}
       <PostCreationModal />
       <CommentModal />
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal />
       <UserProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
 
       {/* Toasts de Feedback */}

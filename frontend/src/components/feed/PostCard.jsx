@@ -13,20 +13,34 @@ import {
   Edit3, 
   Trash2, 
   Share2,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 
 export const PostCard = ({ post }) => {
   const { toggleLike, addComment, setSelectedPostForComments, setActiveHashtag, deletePost, setIsStudioOpen, setEditingPost, showToast } = usePosts();
-  const { user } = useAuth();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const [commentInput, setCommentInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isSaved, setIsSaved] = useState(post.is_saved || false);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
 
+  // Comprobar si el usuario autenticado es el autor de este post
+  const isOwner = Boolean(
+    user && (
+      (post.user_id && user.id && post.user_id === user.id) ||
+      (post.user?.id && user.id && post.user.id === user.id) ||
+      (post.user?.username && user.username && post.user.username.toLowerCase() === user.username.toLowerCase())
+    )
+  );
+
   // Doble click para dar like en la imagen
   const handleDoubleTap = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para interactuar y dar Me Gusta');
+      return;
+    }
     setShowHeartBurst(true);
     if (!post.is_liked) {
       toggleLike(post.id);
@@ -34,8 +48,29 @@ export const PostCard = ({ post }) => {
     setTimeout(() => setShowHeartBurst(false), 800);
   };
 
+  const handleLike = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para dar Me Gusta a esta publicación');
+      return;
+    }
+    toggleLike(post.id);
+  };
+
+  const handleSave = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para guardar publicaciones');
+      return;
+    }
+    setIsSaved(!isSaved);
+    showToast(isSaved ? 'Publicación eliminada de guardados' : 'Publicación guardada en tu colección 📌');
+  };
+
   const handleSendComment = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para publicar un comentario');
+      return;
+    }
     if (!commentInput.trim()) return;
     addComment(post.id, commentInput.trim());
     setCommentInput('');
@@ -48,8 +83,21 @@ export const PostCard = ({ post }) => {
   };
 
   const handleEdit = () => {
+    if (!isOwner) {
+      showToast('No tienes permisos para editar publicaciones de otros creadores', 'error');
+      return;
+    }
     setEditingPost(post);
     setIsStudioOpen(true);
+    setShowMenu(false);
+  };
+
+  const handleDelete = () => {
+    if (!isOwner) {
+      showToast('No tienes permisos para eliminar publicaciones de otros creadores', 'error');
+      return;
+    }
+    deletePost(post.id);
     setShowMenu(false);
   };
 
@@ -71,10 +119,9 @@ export const PostCard = ({ post }) => {
     return null;
   };
 
-  // Determinar clases de aspecto
   const aspectClass = 
-    post.aspect_ratio === '4:5' ? 'aspect-[4/5]' :
-    post.aspect_ratio === '16:9' ? 'aspect-video' :
+    post.aspect_ratio === '4:5' || post.media_ratio === '4:5' ? 'aspect-[4/5]' :
+    post.aspect_ratio === '16:9' || post.media_ratio === '16:9' ? 'aspect-video' :
     'aspect-square';
 
   return (
@@ -115,51 +162,59 @@ export const PostCard = ({ post }) => {
             <MoreHorizontal className="w-5 h-5" />
           </button>
 
-          {/* Menú de opciones */}
+          {/* Menú de opciones (Solo muestra Editar/Eliminar si es el dueño del post) */}
           {showMenu && (
             <div className="absolute right-0 top-8 z-30 w-44 glass-panel rounded-xl shadow-2xl border border-white/10 p-1 animate-scale-up">
-              <button
-                onClick={handleEdit}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 rounded-lg text-left transition-colors"
-              >
-                <Edit3 className="w-4 h-4 text-pink-400" />
-                <span>Editar Post</span>
-              </button>
-              <button
-                onClick={handleCopyLink}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 rounded-lg text-left transition-colors"
-              >
-                <Share2 className="w-4 h-4 text-blue-400" />
-                <span>Copiar Enlace</span>
-              </button>
-              <button
-                onClick={() => {
-                  deletePost(post.id);
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg text-left transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Eliminar Post</span>
-              </button>
+              {isOwner ? (
+                <>
+                  <button
+                    onClick={handleEdit}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 rounded-lg text-left transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4 text-pink-400" />
+                    <span>Editar Post</span>
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 rounded-lg text-left transition-colors"
+                  >
+                    <Share2 className="w-4 h-4 text-blue-400" />
+                    <span>Copiar Enlace</span>
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg text-left transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Eliminar Post</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10 rounded-lg text-left transition-colors"
+                >
+                  <Share2 className="w-4 h-4 text-blue-400" />
+                  <span>Copiar Enlace</span>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Post Media (Imagen con soporte doble tap para dar Like) */}
+      {/* Post Media */}
       <div 
         onDoubleClick={handleDoubleTap}
         className={`relative w-full ${aspectClass} bg-black/40 overflow-hidden cursor-pointer select-none group`}
       >
         <img
-          src={post.media_url}
+          src={post.media_url || post.mediaUrl}
           alt={post.caption || "Post media"}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
           loading="lazy"
         />
 
-        {/* Animación corazón flotante en doble click */}
         {showHeartBurst && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-heart-beat">
             <Heart className="w-24 h-24 text-pink-500 fill-pink-500 drop-shadow-glow-pink" />
@@ -172,9 +227,9 @@ export const PostCard = ({ post }) => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3.5">
             
-            {/* Botón Like */}
+            {/* Botón Like con control de autenticación */}
             <button
-              onClick={() => toggleLike(post.id)}
+              onClick={handleLike}
               className="group flex items-center gap-1.5 focus:outline-none"
             >
               <Heart
@@ -205,10 +260,7 @@ export const PostCard = ({ post }) => {
 
           {/* Botón Guardar */}
           <button
-            onClick={() => {
-              setIsSaved(!isSaved);
-              showToast(isSaved ? 'Publicación eliminada de guardados' : 'Publicación guardada en tu colección 📌');
-            }}
+            onClick={handleSave}
             className="focus:outline-none"
           >
             <Bookmark
@@ -224,7 +276,7 @@ export const PostCard = ({ post }) => {
           {post.likes_count} {post.likes_count === 1 ? 'Me gusta' : 'Me gustas'}
         </p>
 
-        {/* Caption & Expandible */}
+        {/* Caption */}
         <div className="text-xs text-gray-200 leading-relaxed mb-2">
           <span className="font-bold text-gray-100 mr-2">{post.user?.username}</span>
           <span>
@@ -274,12 +326,18 @@ export const PostCard = ({ post }) => {
         <form onSubmit={handleSendComment} className="flex items-center gap-2 pt-2 border-t border-white/5">
           <input
             type="text"
-            placeholder="Añade un comentario..."
+            placeholder={isAuthenticated ? "Añade un comentario..." : "Inicia sesión para comentar..."}
             value={commentInput}
             onChange={(e) => setCommentInput(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-gray-100 placeholder-gray-500 focus:outline-none"
+            onClick={() => {
+              if (!isAuthenticated) {
+                openAuthModal('Inicia sesión para unirte a la conversación');
+              }
+            }}
+            readOnly={!isAuthenticated}
+            className={`flex-1 bg-transparent text-xs text-gray-100 placeholder-gray-500 focus:outline-none ${!isAuthenticated ? 'cursor-pointer' : ''}`}
           />
-          {commentInput.trim() && (
+          {isAuthenticated && commentInput.trim() && (
             <button
               type="submit"
               className="text-xs font-bold text-pink-500 hover:text-pink-400 transition-colors"

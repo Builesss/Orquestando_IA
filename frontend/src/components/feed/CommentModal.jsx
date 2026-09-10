@@ -1,16 +1,22 @@
 // src/components/feed/CommentModal.jsx
 import React, { useState } from 'react';
 import { usePosts } from '../../context/PostContext';
-import { X, Send, Heart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { X, Send, Heart, LogIn } from 'lucide-react';
 
 export const CommentModal = () => {
   const { selectedPostForComments, setSelectedPostForComments, addComment } = usePosts();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const [commentText, setCommentText] = useState('');
 
   if (!selectedPostForComments) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para publicar un comentario');
+      return;
+    }
     if (!commentText.trim()) return;
     addComment(selectedPostForComments.id, commentText.trim());
     setCommentText('');
@@ -75,7 +81,12 @@ export const CommentModal = () => {
                     <p className="text-gray-300 mt-1 leading-relaxed">{comment.text}</p>
                   </div>
                 </div>
-                <button className="text-gray-500 hover:text-pink-500 p-1 transition-colors">
+                <button 
+                  onClick={() => {
+                    if (!isAuthenticated) openAuthModal('Inicia sesión para interactuar');
+                  }}
+                  className="text-gray-500 hover:text-pink-500 p-1 transition-colors"
+                >
                   <Heart className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -84,23 +95,36 @@ export const CommentModal = () => {
         </div>
 
         {/* Input Footer */}
-        <form onSubmit={handleSubmit} className="p-3 border-t border-white/10 flex items-center gap-2 bg-gray-950/60">
-          <input
-            type="text"
-            placeholder="Añade un comentario constructivo..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-pink-500/50 transition-all"
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={!commentText.trim()}
-            className="p-2 rounded-xl bg-pink-500 hover:bg-pink-600 disabled:opacity-40 text-white transition-all"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+        {isAuthenticated ? (
+          <form onSubmit={handleSubmit} className="p-3 border-t border-white/10 flex items-center gap-2 bg-gray-950/60">
+            <input
+              type="text"
+              placeholder="Añade un comentario constructivo..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-pink-500/50 transition-all"
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={!commentText.trim()}
+              className="p-2 rounded-xl bg-pink-500 hover:bg-pink-600 disabled:opacity-40 text-white transition-all"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        ) : (
+          <div className="p-3 border-t border-white/10 bg-gray-950/60 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-400">Inicia sesión para dejar un comentario</p>
+            <button
+              type="button"
+              onClick={() => openAuthModal('Inicia sesión para comentar esta publicación')}
+              className="px-3.5 py-1.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5" /> Ingresar
+            </button>
+          </div>
+        )}
 
       </div>
     </div>
