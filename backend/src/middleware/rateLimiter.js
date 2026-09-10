@@ -2,13 +2,6 @@ import rateLimit from 'express-rate-limit';
 import { logger } from '../utils/logger.js';
 import { errorResponse } from '../utils/apiResponse.js';
 
-// In-memory blacklist for repeatedly abusive IPs
-const blockedIps = new Map(); // ip -> unblockTimestamp
-const violationCounts = new Map(); // ip -> count
-
-const BAN_DURATION_MS = 60 * 60 * 1000; // 1 hora de bloqueo
-const MAX_VIOLATIONS_BEFORE_BAN = 5;
-
 /**
  * Middleware para verificar si la IP está en la lista negra de bloqueo
  */
