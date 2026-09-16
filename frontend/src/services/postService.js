@@ -201,18 +201,33 @@ export const postService = {
     }
   },
 
+  async getComments(id) {
+    try {
+      const response = await api.get(`/posts/${id}/comments`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.warn('Error fetching comments, using fallback:', error.message);
+      const posts = getLocalPosts();
+      const post = posts.find(p => p.id === id);
+      return post?.comments || [];
+    }
+  },
+
   async addComment(id, text, user) {
     try {
       const response = await api.post(`/posts/${id}/comments`, { text });
       return response.data?.data || response.data;
-    } catch {
+    } catch (error) {
+      console.warn('Error posting comment, using fallback:', error.message);
       const posts = getLocalPosts();
       const newComment = {
         id: 'c_' + Date.now(),
-        username: user?.username || 'usuario_actual',
-        avatar: user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        user: {
+          username: user?.username || 'usuario_actual',
+          avatar_url: user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+        },
         text,
-        created_at: 'Ahora mismo'
+        created_at: new Date().toISOString()
       };
       const updated = posts.map(p => {
         if (p.id === id) {

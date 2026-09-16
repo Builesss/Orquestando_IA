@@ -1,28 +1,64 @@
 // src/components/feed/CommentModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosts } from '../../context/PostContext';
 import { useAuth } from '../../context/AuthContext';
-import { X, Send, Heart, LogIn } from 'lucide-react';
+import { postService } from '../../services/postService';
+import { X, Send, Heart, LogIn, Loader2 } from 'lucide-react';
 
 export const CommentModal = () => {
   const { selectedPostForComments, setSelectedPostForComments, addComment } = usePosts();
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const [commentText, setCommentText] = useState('');
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (selectedPostForComments) {
+      setLoading(true);
+      postService.getComments(selectedPostForComments.id)
+        .then(data => setComments(data))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      setComments([]);
+    }
+  }, [selectedPostForComments]);
 
   if (!selectedPostForComments) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
       openAuthModal('Inicia sesión para publicar un comentario');
       return;
     }
-    if (!commentText.trim()) return;
-    addComment(selectedPostForComments.id, commentText.trim());
+    if (!commentText.trim() || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    const text = commentText.trim();
+    // Optimistic update
+    const optimisticComment = {
+      id: 'temp-' + Date.now(),
+      text,
+      created_at: new Date().toISOString(),
+      user: { username: user?.username, avatar_url: user?.avatar_url }
+    };
+    setComments(prev => [...prev, optimisticComment]);
     setCommentText('');
-  };
 
-  const comments = selectedPostForComments.comments || [];
+    try {
+      const savedComment = await postService.addComment(selectedPostForComments.id, text, user);
+      setComments(prev => prev.map(c => c.id === optimisticComment.id ? savedComment : c));
+      // Tell context to increment count
+      addComment(selectedPostForComments.id, text);
+    } catch (error) {
+      console.error(error);
+      setComments(prev => prev.filter(c => c.id !== optimisticComment.id)); // revert on error
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -60,7 +96,11 @@ export const CommentModal = () => {
 
         {/* Comments List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {comments.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-8 text-pink-500">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : comments.length === 0 ? (
             <div className="text-center py-8 text-gray-400 text-xs">
               Aún no hay comentarios. ¡Sé el primero en comentar! 💬
             </div>
@@ -69,14 +109,14 @@ export const CommentModal = () => {
               <div key={comment.id} className="flex items-start justify-between gap-3 group">
                 <div className="flex items-start gap-3">
                   <img
-                    src={comment.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
-                    alt={comment.username}
+                    src={comment.user?.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                    alt={comment.user?.username || "Usuario"}
                     className="w-8 h-8 rounded-full object-cover shrink-0"
                   />
                   <div className="text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-200">{comment.username}</span>
-                      <span className="text-[10px] text-gray-400">{comment.created_at}</span>
+                      <span className="font-bold text-gray-200">{comment.user?.username || "Usuario"}</span>
+                      <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-gray-300 mt-1 leading-relaxed">{comment.text}</p>
                   </div>

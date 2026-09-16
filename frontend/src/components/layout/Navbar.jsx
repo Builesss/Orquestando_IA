@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePosts } from '../../context/PostContext';
 import { Sparkles, Plus, Moon, Sun, Search, LogIn, UserPlus } from 'lucide-react';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 export const Navbar = ({ currentView, setCurrentView, onOpenProfile }) => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
@@ -92,6 +93,9 @@ export const Navbar = ({ currentView, setCurrentView, onOpenProfile }) => {
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-400" />}
           </button>
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* User Profile Avatar / Login Button */}
           {isAuthenticated && user ? (

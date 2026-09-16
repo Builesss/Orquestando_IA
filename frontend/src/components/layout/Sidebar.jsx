@@ -129,6 +129,22 @@ export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
 
         {isAuthenticated && (
           <button
+            onClick={() => setCurrentView('messages')}
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              currentView === 'messages'
+                ? 'bg-pink-500/10 text-pink-400 shadow-sm border border-pink-500/20'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${currentView === 'messages' ? 'text-pink-400' : 'text-gray-400'}`}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+              <span>Mensajes</span>
+            </div>
+          </button>
+        )}
+
+        {isAuthenticated && (
+          <button
             onClick={() => onOpenProfile(user)}
             className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-all duration-200"
           >

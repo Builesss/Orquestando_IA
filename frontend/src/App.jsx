@@ -15,6 +15,7 @@ import { CommentModal } from './components/feed/CommentModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { UserProfileModal } from './components/auth/UserProfileModal';
 import { ToastContainer } from './components/common/Toast';
+import { MessagesView } from './components/chat/MessagesView';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState('feed'); // 'feed' | 'manager'
@@ -69,6 +70,8 @@ function AppContent() {
             <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} />
           ) : currentView === 'saved' ? (
             <SavedView onOpenProfile={handleOpenProfile} />
+          ) : currentView === 'messages' ? (
+            <MessagesView onOpenProfile={handleOpenProfile} />
           ) : (
             <ManagerView onOpenProfile={handleOpenProfile} />
           )}
