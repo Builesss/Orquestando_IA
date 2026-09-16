@@ -4,6 +4,7 @@ import postRoutes from './postRoutes.js';
 import userRoutes from './userRoutes.js';
 import mediaRoutes from './mediaRoutes.js';
 import aiRoutes from './aiRoutes.js';
+import conversationRoutes from './conversationRoutes.js';
 import { successResponse } from '../utils/apiResponse.js';
 import { isSupabaseConfigured } from '../config/supabase.js';
 
@@ -26,5 +27,6 @@ router.use('/users', userRoutes);
 router.use('/posts', postRoutes);
 router.use('/media', mediaRoutes);
 router.use('/ai', aiRoutes);
+router.use('/conversations', conversationRoutes);
 
 export default router;

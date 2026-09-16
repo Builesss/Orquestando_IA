@@ -8,6 +8,7 @@ const router = Router();
 router.get('/:username', optionalAuth, userController.getUserProfile);
 
 // Acciones sociales
+router.get('/me/following', requireAuth, userController.getFollowing);
 router.post('/:id/follow', optionalAuth, userController.toggleFollow);
 router.post('/:id/friend', optionalAuth, userController.toggleFriend);
 

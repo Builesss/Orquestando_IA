@@ -21,6 +21,18 @@ export const userController = {
   },
 
   /**
+   * GET /api/users/me/following
+   */
+  async getFollowing(req, res, next) {
+    try {
+      const friends = await userService.getFollowing(req.user.id);
+      return successResponse(res, friends, 'Seguidos obtenidos exitosamente');
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * POST /api/users/:id/follow
    */
   async toggleFollow(req, res, next) {

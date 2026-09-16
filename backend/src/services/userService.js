@@ -66,6 +66,37 @@ export const userService = {
   },
 
   /**
+   * Obtener lista de usuarios seguidos
+   */
+  async getFollowing(currentUserId) {
+    if (!isSupabaseConfigured()) return [];
+
+    const supabase = getSupabase();
+    
+    // Obtenemos los id de quienes sigo
+    const { data: follows, error } = await supabase
+      .from('user_follows')
+      .select('following_id')
+      .eq('follower_id', currentUserId);
+
+    if (error) throw error;
+    if (!follows || !follows.length) return [];
+
+    const followingIds = follows.map(f => f.following_id);
+
+    // Luego obtenemos los datos de esos usuarios usando la vista authService
+    // o usando supabase auth/users (para mantener la consistencia con authService, podemos pedirlo ahi, pero authService no expone un getUsersByIds, asi que lo pedimos a Supabase si es público, o simplemente mapeamos usando profiles si existen).
+    // Como las políticas son restrictivas o no tenemos acceso directo a users publico a veces, usaremos la funcion de obtener perfiles publicos
+    const { data: usersData, error: usersError } = await supabase
+      .from('users') // Ojo, esta tabla users debe ser accesible o podemos usar una function RPC
+      .select('id, username, avatar_url')
+      .in('id', followingIds);
+
+    if (usersError) throw usersError;
+    return usersData || [];
+  },
+
+  /**
    * Seguir o dejar de seguir a un usuario
    */
   async toggleFollow(targetUserId, currentUserId) {
