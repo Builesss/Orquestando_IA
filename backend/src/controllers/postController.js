@@ -192,5 +192,38 @@ export const postController = {
       }
       next(error);
     }
+  },
+
+  /**
+   * GET /api/posts/:id/comments
+   */
+  async getComments(req, res, next) {
+    try {
+      const { id } = req.params;
+      const comments = await postService.getComments(id);
+      return successResponse(res, comments, 'Comentarios obtenidos exitosamente');
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /api/posts/:id/comments
+   */
+  async addComment(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { text } = req.body;
+      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+
+      if (!text || text.trim() === '') {
+        return errorResponse(res, 'El texto del comentario es obligatorio', 400);
+      }
+
+      const comment = await postService.addComment(id, userId, text);
+      return successResponse(res, comment, 'Comentario agregado exitosamente', 201);
+    } catch (error) {
+      next(error);
+    }
   }
 };

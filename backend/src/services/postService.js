@@ -390,6 +390,78 @@ export const postService = {
   },
 
   /**
+   * Obtener comentarios de un post
+   */
+  async getComments(postId) {
+    if (!isSupabaseConfigured()) {
+      return [];
+    }
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        text,
+        created_at,
+        users (id, username, avatar_url)
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      logger.error('Error obteniendo comentarios:', error.message);
+      return [];
+    }
+
+    return data.map(c => ({
+      id: c.id,
+      text: c.text,
+      created_at: c.created_at,
+      user: c.users
+    }));
+  },
+
+  /**
+   * Agregar comentario a un post
+   */
+  async addComment(postId, userId, text) {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Base de datos no configurada.');
+    }
+    const supabase = getSupabase();
+
+    // Insertar comentario
+    const { data: newComment, error } = await supabase
+      .from('comments')
+      .insert([{ post_id: postId, user_id: userId, text }])
+      .select(`
+        id,
+        text,
+        created_at,
+        users (id, username, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      logger.error('Error insertando comentario:', error.message);
+      throw new Error('No se pudo agregar el comentario.');
+    }
+
+    // Obtener y actualizar conteo (Opcional si usamos triggers, pero es mejor actualizar el denormalizado)
+    const { data: post } = await supabase.from('posts').select('comments_count').eq('id', postId).single();
+    if (post) {
+      await supabase.from('posts').update({ comments_count: (post.comments_count || 0) + 1 }).eq('id', postId);
+    }
+
+    return {
+      id: newComment.id,
+      text: newComment.text,
+      created_at: newComment.created_at,
+      user: newComment.users
+    };
+  },
+
+  /**
    * Normalizar estructura del post desde Supabase al formato del frontend
    * @private
    */

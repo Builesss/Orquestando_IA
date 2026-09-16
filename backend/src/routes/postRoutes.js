@@ -19,4 +19,8 @@ router.post('/:id/save', optionalAuth, postController.toggleSave);
 router.post('/:id/duplicate', optionalAuth, postController.duplicatePost);
 router.post('/:id/publish', optionalAuth, postController.publishPost);
 
+// Comentarios
+router.get('/:id/comments', optionalAuth, postController.getComments);
+router.post('/:id/comments', requireAuth, postController.addComment);
+
 export default router;
