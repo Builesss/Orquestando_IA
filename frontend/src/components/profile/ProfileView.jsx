@@ -4,7 +4,6 @@ import { usePosts } from '../../context/PostContext';
 import { useAuth } from '../../context/AuthContext';
 import { PostCard } from '../feed/PostCard';
 import { userService } from '../../services/userService';
-import { getSupabase, isSupabaseConfigured } from '../../config/supabase';
 import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar, Loader2, MessageSquare } from 'lucide-react';
 
 export const ProfileView = ({ user: profileUser, onOpenProfile, onOpenChat }) => {
@@ -97,57 +96,23 @@ export const ProfileView = ({ user: profileUser, onOpenProfile, onOpenChat }) =>
       openAuthModal('Inicia sesión para enviar mensajes');
       return;
     }
-    if (!isSupabaseConfigured()) return;
-
     const otherUserId = profileUser.id || profileData?.id;
-    if (!otherUserId || !currentUser?.id) return;
+    if (!otherUserId) return;
 
     setLoadingMessage(true);
     try {
-      const supabase = getSupabase();
-
-      // Check if conversation already exists between the two users
-      const { data: myParticipations } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', currentUser.id);
-
-      let conversationId = null;
-
-      if (myParticipations?.length) {
-        const myConvIds = myParticipations.map(p => p.conversation_id);
-        const { data: shared } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', otherUserId)
-          .in('conversation_id', myConvIds);
-
-        if (shared?.length) {
-          conversationId = shared[0].conversation_id;
-        }
+      // Use backend API — no Supabase keys needed on client
+      const conv = await userService.startConversation(otherUserId);
+      if (conv?.id && onOpenChat) {
+        onOpenChat(conv.id);
+      } else if (onOpenChat) {
+        // Backend may not have route yet — navigate anyway
+        onOpenChat(null);
       }
-
-      // Create new conversation if none exists
-      if (!conversationId) {
-        const { data: newConv } = await supabase
-          .from('conversations')
-          .insert({})
-          .select('id')
-          .single();
-
-        if (newConv) {
-          conversationId = newConv.id;
-          await supabase.from('conversation_participants').insert([
-            { conversation_id: conversationId, user_id: currentUser.id },
-            { conversation_id: conversationId, user_id: otherUserId }
-          ]);
-        }
-      }
-
-      // Navigate to messages view with the conversation pre-selected
-      if (onOpenChat) onOpenChat(conversationId);
     } catch (err) {
       console.error('Error al iniciar conversación:', err);
+      // Fallback: just navigate to messages
+      if (onOpenChat) onOpenChat(null);
     } finally {
       setLoadingMessage(false);
     }
