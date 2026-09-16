@@ -31,8 +31,8 @@ export const PostProvider = ({ children }) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const loadPosts = async () => {
-    setLoading(true);
+  const loadPosts = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await postService.getPosts({
         status: statusFilter === 'all' ? undefined : statusFilter,
@@ -41,14 +41,21 @@ export const PostProvider = ({ children }) => {
       setPosts(data.posts || []);
     } catch (e) {
       console.error('Error cargando publicaciones:', e);
-      showToast('Error al cargar publicaciones', 'error');
+      if (showLoading) showToast('Error al cargar publicaciones', 'error');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPosts();
+    loadPosts(true);
+
+    // Auto-refresh cada 30 segundos de manera silenciosa
+    const intervalId = setInterval(() => {
+      loadPosts(false);
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, [statusFilter, activeHashtag]);
 
   const handleCreatePost = async (postData) => {
@@ -153,6 +160,24 @@ export const PostProvider = ({ children }) => {
     }
   };
 
+  const handleToggleSave = async (id) => {
+    // Actualización optimista
+    setPosts(prev =>
+      prev.map(p => {
+        if (p.id === id) {
+          return { ...p, is_saved: !p.is_saved };
+        }
+        return p;
+      })
+    );
+
+    try {
+      await postService.toggleSave(id);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleAddComment = async (postId, text) => {
     try {
       const newComment = await postService.addComment(postId, text, user);
@@ -206,6 +231,7 @@ export const PostProvider = ({ children }) => {
         updatePost: handleUpdatePost,
         deletePost: handleDeletePost,
         toggleLike: handleToggleLike,
+        toggleSave: handleToggleSave,
         addComment: handleAddComment,
       }}
     >

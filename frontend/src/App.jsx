@@ -8,6 +8,8 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MobileNav } from './components/layout/MobileNav';
 import { FeedView } from './components/feed/FeedView';
 import { ManagerView } from './components/manager/ManagerView';
+import { ProfileView } from './components/profile/ProfileView';
+import { SavedView } from './components/saved/SavedView';
 import { PostCreationModal } from './components/studio/PostCreationModal';
 import { CommentModal } from './components/feed/CommentModal';
 import { AuthModal } from './components/auth/AuthModal';
@@ -21,9 +23,16 @@ function AppContent() {
   const [initialEditMode, setInitialEditMode] = useState(false);
 
   const handleOpenProfile = (userObj = null, editMode = false) => {
-    setTargetUser(userObj);
-    setInitialEditMode(Boolean(editMode));
-    setIsProfileOpen(true);
+    if (editMode) {
+      // Abre el modal de editar perfil solo si es modo edición
+      setTargetUser(userObj);
+      setInitialEditMode(true);
+      setIsProfileOpen(true);
+    } else {
+      // Navega a la vista de perfil completo
+      setTargetUser(userObj);
+      setCurrentView('profile');
+    }
   };
 
   const handleCloseProfile = () => {
@@ -55,7 +64,11 @@ function AppContent() {
         {/* Dynamic Main View */}
         <main className="flex-1 px-3 sm:px-6 py-4 overflow-y-auto">
           {currentView === 'feed' ? (
-            <FeedView />
+            <FeedView onOpenProfile={handleOpenProfile} />
+          ) : currentView === 'profile' ? (
+            <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} />
+          ) : currentView === 'saved' ? (
+            <SavedView onOpenProfile={handleOpenProfile} />
           ) : (
             <ManagerView onOpenProfile={handleOpenProfile} />
           )}

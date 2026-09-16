@@ -16,6 +16,8 @@ const normalizePost = (p) => {
     is_liked: p.isLiked !== undefined ? p.isLiked : (p.is_liked || false),
     isLiked: p.isLiked !== undefined ? p.isLiked : (p.is_liked || false),
     likes_count: p.likes_count || 0,
+    is_saved: p.isSaved !== undefined ? p.isSaved : (p.is_saved || false),
+    isSaved: p.isSaved !== undefined ? p.isSaved : (p.is_saved || false),
     comments_count: p.comments_count || (p.comments ? p.comments.length : 0),
     comments: p.comments || [],
     hashtags: p.hashtags || []
@@ -224,6 +226,26 @@ export const postService = {
       });
       saveLocalPosts(updated);
       return newComment;
+    }
+  },
+
+  async toggleSave(id) {
+    try {
+      const response = await api.post(`/posts/${id}/save`);
+      return response.data?.data || response.data;
+    } catch {
+      const posts = getLocalPosts();
+      let updatedPost = null;
+      const updated = posts.map(p => {
+        if (p.id === id) {
+          const isSaved = !p.is_saved;
+          updatedPost = normalizePost({ ...p, is_saved: isSaved, isSaved });
+          return updatedPost;
+        }
+        return p;
+      });
+      saveLocalPosts(updated);
+      return { saved: updatedPost?.is_saved };
     }
   }
 };

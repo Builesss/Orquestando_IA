@@ -10,7 +10,8 @@ import {
   Zap,
   LogIn,
   User,
-  Edit3
+  Edit3,
+  Bookmark
 } from 'lucide-react';
 
 export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
@@ -109,6 +110,22 @@ export const Sidebar = ({ currentView, setCurrentView, onOpenProfile }) => {
             </span>
           )}
         </button>
+
+        {isAuthenticated && (
+          <button
+            onClick={() => setCurrentView('saved')}
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              currentView === 'saved'
+                ? 'bg-amber-500/10 text-amber-400 shadow-sm border border-amber-500/20'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Bookmark className={`w-4 h-4 ${currentView === 'saved' ? 'text-amber-400' : 'text-gray-400'}`} />
+              <span>Guardados</span>
+            </div>
+          </button>
+        )}
 
         {isAuthenticated && (
           <button

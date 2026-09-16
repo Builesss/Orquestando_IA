@@ -5,7 +5,7 @@ import { StoriesBar } from './StoriesBar';
 import { PostCard } from './PostCard';
 import { Sparkles, Hash, Plus, Filter } from 'lucide-react';
 
-export const FeedView = () => {
+export const FeedView = ({ onOpenProfile }) => {
   const { posts, loading, activeHashtag, setActiveHashtag, setIsStudioOpen, setEditingPost } = usePosts();
 
   // Filtrar en el feed sólo los publicados por defecto (o los que cumplan el hashtag)
@@ -82,7 +82,7 @@ export const FeedView = () => {
       ) : (
         <div className="space-y-6">
           {feedPosts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} onOpenProfile={onOpenProfile} />
           ))}
         </div>
       )}

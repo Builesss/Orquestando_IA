@@ -2,7 +2,7 @@
 import React from 'react';
 import { usePosts } from '../../context/PostContext';
 import { useAuth } from '../../context/AuthContext';
-import { Home, FolderKanban, Plus, User, LogIn } from 'lucide-react';
+import { Home, FolderKanban, Plus, User, LogIn, Bookmark } from 'lucide-react';
 
 export const MobileNav = ({ currentView, setCurrentView, onOpenProfile }) => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
@@ -61,6 +61,22 @@ export const MobileNav = ({ currentView, setCurrentView, onOpenProfile }) => {
       >
         <FolderKanban className="w-5 h-5" />
         <span>Mis Posts</span>
+      </button>
+
+      <button
+        onClick={() => {
+          if (!isAuthenticated) {
+            openAuthModal('Inicia sesión para ver tus guardados');
+            return;
+          }
+          setCurrentView('saved');
+        }}
+        className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+          currentView === 'saved' ? 'text-amber-400 font-bold' : 'text-gray-400 hover:text-gray-200'
+        }`}
+      >
+        <Bookmark className="w-5 h-5" />
+        <span>Guardados</span>
       </button>
 
       <button

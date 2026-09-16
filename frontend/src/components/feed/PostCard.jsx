@@ -17,13 +17,12 @@ import {
   Lock
 } from 'lucide-react';
 
-export const PostCard = ({ post }) => {
-  const { toggleLike, addComment, setSelectedPostForComments, setActiveHashtag, deletePost, setIsStudioOpen, setEditingPost, showToast } = usePosts();
+export const PostCard = ({ post, onOpenProfile }) => {
+  const { toggleLike, toggleSave, addComment, setSelectedPostForComments, setActiveHashtag, deletePost, setIsStudioOpen, setEditingPost, showToast } = usePosts();
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const [commentInput, setCommentInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [isSaved, setIsSaved] = useState(post.is_saved || false);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
 
   // Comprobar si el usuario autenticado es el autor de este post
@@ -61,8 +60,14 @@ export const PostCard = ({ post }) => {
       openAuthModal('Inicia sesión para guardar publicaciones');
       return;
     }
-    setIsSaved(!isSaved);
-    showToast(isSaved ? 'Publicación eliminada de guardados' : 'Publicación guardada en tu colección 📌');
+    toggleSave(post.id);
+    showToast(!post.is_saved ? 'Publicación guardada en tu colección 📌' : 'Publicación eliminada de guardados');
+  };
+
+  const handleProfileClick = () => {
+    if (onOpenProfile) {
+      onOpenProfile(post.user, false);
+    }
   };
 
   const handleSendComment = (e) => {
@@ -139,7 +144,10 @@ export const PostCard = ({ post }) => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs sm:text-sm font-bold text-gray-100 hover:underline cursor-pointer">
+              <span 
+                onClick={handleProfileClick}
+                className="text-xs sm:text-sm font-bold text-gray-100 hover:underline cursor-pointer"
+              >
                 {post.user?.username || 'orquestador'}
               </span>
               {post.user?.verified && (
@@ -265,7 +273,7 @@ export const PostCard = ({ post }) => {
           >
             <Bookmark
               className={`w-6 h-6 transition-colors ${
-                isSaved ? 'text-amber-400 fill-amber-400' : 'text-gray-300 hover:text-amber-400'
+                post.is_saved ? 'text-amber-400 fill-amber-400' : 'text-gray-300 hover:text-amber-400'
               }`}
             />
           </button>
