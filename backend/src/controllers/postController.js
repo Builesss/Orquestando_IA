@@ -134,6 +134,24 @@ export const postController = {
   },
 
   /**
+   * POST /api/posts/:id/save
+   */
+  async toggleSave(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user ? req.user.id : '11111111-1111-4111-a111-111111111111';
+
+      const result = await postService.toggleSave(id, userId);
+      return successResponse(res, result, result.saved ? 'Publicación guardada' : 'Publicación removida de guardados');
+    } catch (error) {
+      if (error.message.includes('no encontrada')) {
+        return errorResponse(res, error.message, 404);
+      }
+      next(error);
+    }
+  },
+
+  /**
    * POST /api/posts/:id/duplicate
    */
   async duplicatePost(req, res, next) {

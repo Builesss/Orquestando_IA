@@ -21,11 +21,14 @@ export const postService = {
         post_hashtags (
           hashtags (name)
         ),
-        post_likes (user_id)
+        post_likes (user_id),
+        post_saves${status === 'saved' ? '!inner' : ''} (user_id)
       `, { count: 'exact' });
 
     // Filtro por estado
-    if (status && status !== 'all') {
+    if (status === 'saved') {
+      query = query.eq('post_saves.user_id', userId);
+    } else if (status && status !== 'all') {
       query = query.eq('status', status);
     }
 
@@ -83,7 +86,8 @@ export const postService = {
         *,
         users!posts_user_id_fkey (id, username, avatar_url),
         post_hashtags ( hashtags (name) ),
-        post_likes (user_id)
+        post_likes (user_id),
+        post_saves (user_id)
       `)
       .eq('id', id)
       .maybeSingle();
@@ -254,6 +258,36 @@ export const postService = {
   },
 
   /**
+   * Toggle de Guardado (Bookmark)
+   */
+  async toggleSave(postId, userId) {
+    if (!isSupabaseConfigured()) throw new Error('Base de datos no configurada.');
+    const supabase = getSupabase();
+
+    const { data: existing } = await supabase
+      .from('post_saves')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let isSaved;
+
+    if (existing) {
+      await supabase.from('post_saves').delete().eq('post_id', postId).eq('user_id', userId);
+      isSaved = false;
+    } else {
+      await supabase.from('post_saves').insert([{ post_id: postId, user_id: userId }]);
+      isSaved = true;
+    }
+
+    return {
+      postId,
+      saved: isSaved
+    };
+  },
+
+  /**
    * Duplicar publicación como nuevo borrador
    */
   async duplicatePost(id, user) {
@@ -364,6 +398,9 @@ export const postService = {
     const likedByMe = currentUserId
       ? (raw.post_likes || []).some(l => l.user_id === currentUserId)
       : false;
+    const savedByMe = currentUserId
+      ? (raw.post_saves || []).some(s => s.user_id === currentUserId)
+      : false;
 
     return {
       id: raw.id,
@@ -380,6 +417,9 @@ export const postService = {
       comments_count: raw.comments_count || 0,
       hashtags,
       isLiked: likedByMe,
+      is_liked: likedByMe,
+      is_saved: savedByMe,
+      isSaved: savedByMe,
       created_at: raw.created_at,
       updated_at: raw.updated_at
     };

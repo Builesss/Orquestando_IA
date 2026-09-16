@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
 import postRoutes from './postRoutes.js';
+import userRoutes from './userRoutes.js';
 import mediaRoutes from './mediaRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import { successResponse } from '../utils/apiResponse.js';
@@ -21,6 +22,7 @@ router.get('/health', (req, res) => {
 
 // Modular routes
 router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 router.use('/posts', postRoutes);
 router.use('/media', mediaRoutes);
 router.use('/ai', aiRoutes);
