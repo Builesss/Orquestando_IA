@@ -22,6 +22,7 @@ function AppContent() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [targetUser, setTargetUser] = useState(null);
   const [initialEditMode, setInitialEditMode] = useState(false);
+  const [chatConversationId, setChatConversationId] = useState(null);
 
   const handleOpenProfile = (userObj = null, editMode = false) => {
     if (editMode) {
@@ -34,6 +35,11 @@ function AppContent() {
       setTargetUser(userObj);
       setCurrentView('profile');
     }
+  };
+
+  const handleOpenChat = (conversationId = null) => {
+    setChatConversationId(conversationId);
+    setCurrentView('messages');
   };
 
   const handleCloseProfile = () => {
@@ -67,11 +73,11 @@ function AppContent() {
           {currentView === 'feed' ? (
             <FeedView onOpenProfile={handleOpenProfile} />
           ) : currentView === 'profile' ? (
-            <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} setCurrentView={setCurrentView} />
+            <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} onOpenChat={handleOpenChat} />
           ) : currentView === 'saved' ? (
             <SavedView onOpenProfile={handleOpenProfile} />
           ) : currentView === 'messages' ? (
-            <MessagesView onOpenProfile={handleOpenProfile} />
+            <MessagesView onOpenProfile={handleOpenProfile} initialConversationId={chatConversationId} />
           ) : (
             <ManagerView onOpenProfile={handleOpenProfile} />
           )}

@@ -7,7 +7,7 @@ import { userService } from '../../services/userService';
 import { getSupabase, isSupabaseConfigured } from '../../config/supabase';
 import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar, Loader2, MessageSquare } from 'lucide-react';
 
-export const ProfileView = ({ user: profileUser, onOpenProfile, setCurrentView }) => {
+export const ProfileView = ({ user: profileUser, onOpenProfile, onOpenChat }) => {
   const { posts } = usePosts();
   const { user: currentUser, isAuthenticated, openAuthModal } = useAuth();
   
@@ -144,8 +144,8 @@ export const ProfileView = ({ user: profileUser, onOpenProfile, setCurrentView }
         }
       }
 
-      // Navigate to messages view
-      if (setCurrentView) setCurrentView('messages');
+      // Navigate to messages view with the conversation pre-selected
+      if (onOpenChat) onOpenChat(conversationId);
     } catch (err) {
       console.error('Error al iniciar conversación:', err);
     } finally {
