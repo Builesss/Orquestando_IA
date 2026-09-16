@@ -67,7 +67,7 @@ function AppContent() {
           {currentView === 'feed' ? (
             <FeedView onOpenProfile={handleOpenProfile} />
           ) : currentView === 'profile' ? (
-            <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} />
+            <ProfileView user={targetUser} onOpenProfile={handleOpenProfile} setCurrentView={setCurrentView} />
           ) : currentView === 'saved' ? (
             <SavedView onOpenProfile={handleOpenProfile} />
           ) : currentView === 'messages' ? (

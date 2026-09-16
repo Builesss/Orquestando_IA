@@ -4,9 +4,10 @@ import { usePosts } from '../../context/PostContext';
 import { useAuth } from '../../context/AuthContext';
 import { PostCard } from '../feed/PostCard';
 import { userService } from '../../services/userService';
-import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { getSupabase, isSupabaseConfigured } from '../../config/supabase';
+import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar, Loader2, MessageSquare } from 'lucide-react';
 
-export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
+export const ProfileView = ({ user: profileUser, onOpenProfile, setCurrentView }) => {
   const { posts } = usePosts();
   const { user: currentUser, isAuthenticated, openAuthModal } = useAuth();
   
@@ -18,10 +19,13 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
   const [friendsCount, setFriendsCount] = useState(0);
   const [loadingFollow, setLoadingFollow] = useState(false);
   const [loadingFriend, setLoadingFriend] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(false);
 
   // Load full profile from API on mount or when user changes
   useEffect(() => {
     if (!profileUser?.username) return;
+    setLoadingProfile(true);
     userService.getUserProfile(profileUser.username).then(data => {
       if (data) {
         setProfileData(data);
@@ -30,7 +34,7 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
         setFollowersCount(data.followersCount || 0);
         setFriendsCount(data.friendsCount || 0);
       }
-    });
+    }).finally(() => setLoadingProfile(false));
   }, [profileUser?.username]);
 
   if (!profileUser) {
@@ -88,6 +92,67 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      openAuthModal('Inicia sesión para enviar mensajes');
+      return;
+    }
+    if (!isSupabaseConfigured()) return;
+
+    const otherUserId = profileUser.id || profileData?.id;
+    if (!otherUserId || !currentUser?.id) return;
+
+    setLoadingMessage(true);
+    try {
+      const supabase = getSupabase();
+
+      // Check if conversation already exists between the two users
+      const { data: myParticipations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', currentUser.id);
+
+      let conversationId = null;
+
+      if (myParticipations?.length) {
+        const myConvIds = myParticipations.map(p => p.conversation_id);
+        const { data: shared } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', otherUserId)
+          .in('conversation_id', myConvIds);
+
+        if (shared?.length) {
+          conversationId = shared[0].conversation_id;
+        }
+      }
+
+      // Create new conversation if none exists
+      if (!conversationId) {
+        const { data: newConv } = await supabase
+          .from('conversations')
+          .insert({})
+          .select('id')
+          .single();
+
+        if (newConv) {
+          conversationId = newConv.id;
+          await supabase.from('conversation_participants').insert([
+            { conversation_id: conversationId, user_id: currentUser.id },
+            { conversation_id: conversationId, user_id: otherUserId }
+          ]);
+        }
+      }
+
+      // Navigate to messages view
+      if (setCurrentView) setCurrentView('messages');
+    } catch (err) {
+      console.error('Error al iniciar conversación:', err);
+    } finally {
+      setLoadingMessage(false);
+    }
+  };
+
   // Filter posts created by this user (from global state)
   const userPosts = posts.filter(p =>
     p.user?.username === profileUser.username ||
@@ -124,7 +189,7 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
 
               {/* Action Buttons */}
               {!isSelf && (
-                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
                   <button
                     onClick={handleFollow}
                     disabled={loadingFollow}
@@ -136,6 +201,16 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
                   >
                     {loadingFollow && <Loader2 className="w-3 h-3 animate-spin" />}
                     {isFollowing ? 'Siguiendo' : 'Seguir'}
+                  </button>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={loadingMessage}
+                    className="p-2 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Enviar mensaje"
+                  >
+                    {loadingMessage
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <MessageSquare className="w-4 h-4" />}
                   </button>
                   <button
                     onClick={handleAddFriend}
