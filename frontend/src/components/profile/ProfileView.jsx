@@ -1,19 +1,38 @@
 // src/components/profile/ProfileView.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosts } from '../../context/PostContext';
 import { useAuth } from '../../context/AuthContext';
 import { PostCard } from '../feed/PostCard';
-import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar } from 'lucide-react';
+import { userService } from '../../services/userService';
+import { UserPlus, UserCheck, CheckCircle2, MapPin, Calendar, Loader2 } from 'lucide-react';
 
 export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
   const { posts } = usePosts();
   const { user: currentUser, isAuthenticated, openAuthModal } = useAuth();
   
-  // Simulated local state for Follow and Add Friend
+  // State initialized from API profile data (filled on load)
+  const [profileData, setProfileData] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [loadingFollow, setLoadingFollow] = useState(false);
+  const [loadingFriend, setLoadingFriend] = useState(false);
 
-  // If no user is provided, maybe show an error or a placeholder
+  // Load full profile from API on mount or when user changes
+  useEffect(() => {
+    if (!profileUser?.username) return;
+    userService.getUserProfile(profileUser.username).then(data => {
+      if (data) {
+        setProfileData(data);
+        setIsFollowing(data.isFollowing || false);
+        setIsFriend(!!data.isFriend);
+        setFollowersCount(data.followersCount || 0);
+        setFriendsCount(data.friendsCount || 0);
+      }
+    });
+  }, [profileUser?.username]);
+
   if (!profileUser) {
     return (
       <div className="w-full max-w-2xl mx-auto py-10 px-4 text-center">
@@ -24,27 +43,56 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
 
   const isSelf = isAuthenticated && currentUser?.username === profileUser.username;
 
-  // Filter posts created by this user
-  const userPosts = posts.filter(p => {
-    return p.user?.username === profileUser.username || 
-           (p.user_id && p.user_id === profileUser.id);
-  });
-
-  const handleFollow = () => {
+  const handleFollow = async () => {
     if (!isAuthenticated) {
       openAuthModal('Inicia sesión para seguir a este usuario');
       return;
     }
-    setIsFollowing(!isFollowing);
+    setLoadingFollow(true);
+    // Optimistic update
+    const nextState = !isFollowing;
+    setIsFollowing(nextState);
+    setFollowersCount(c => nextState ? c + 1 : Math.max(0, c - 1));
+    try {
+      const result = await userService.toggleFollow(profileUser.id || profileData?.id);
+      // Sync with server response
+      setIsFollowing(result.following);
+    } catch {
+      // Revert on error
+      setIsFollowing(!nextState);
+      setFollowersCount(c => nextState ? Math.max(0, c - 1) : c + 1);
+    } finally {
+      setLoadingFollow(false);
+    }
   };
 
-  const handleAddFriend = () => {
+  const handleAddFriend = async () => {
     if (!isAuthenticated) {
       openAuthModal('Inicia sesión para añadir como amigo');
       return;
     }
-    setIsFriend(!isFriend);
+    setLoadingFriend(true);
+    // Optimistic update
+    const nextState = !isFriend;
+    setIsFriend(nextState);
+    setFriendsCount(c => nextState ? c + 1 : Math.max(0, c - 1));
+    try {
+      const result = await userService.toggleFriend(profileUser.id || profileData?.id);
+      setIsFriend(!!result.friendStatus);
+    } catch {
+      // Revert on error
+      setIsFriend(!nextState);
+      setFriendsCount(c => nextState ? Math.max(0, c - 1) : c + 1);
+    } finally {
+      setLoadingFriend(false);
+    }
   };
+
+  // Filter posts created by this user (from global state)
+  const userPosts = posts.filter(p =>
+    p.user?.username === profileUser.username ||
+    (p.user_id && p.user_id === (profileUser.id || profileData?.id))
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto py-6 px-3 sm:px-0 animate-fade-in">
@@ -79,24 +127,29 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <button
                     onClick={handleFollow}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                    disabled={loadingFollow}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
                       isFollowing 
                         ? 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
                         : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 shadow-glow-pink'
-                    }`}
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
+                    {loadingFollow && <Loader2 className="w-3 h-3 animate-spin" />}
                     {isFollowing ? 'Siguiendo' : 'Seguir'}
                   </button>
                   <button
                     onClick={handleAddFriend}
+                    disabled={loadingFriend}
                     className={`p-2 rounded-xl border transition-colors ${
                       isFriend
                         ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
                         : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
-                    }`}
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
                     title={isFriend ? 'Amigos' : 'Añadir amigo'}
                   >
-                    {isFriend ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                    {loadingFriend
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : isFriend ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
                   </button>
                 </div>
               )}
@@ -121,18 +174,22 @@ export const ProfileView = ({ user: profileUser, onOpenProfile }) => {
               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Se unió recientemente</span>
             </div>
 
-            {/* Stats */}
+            {/* Stats - real data from API */}
             <div className="flex items-center justify-center sm:justify-start gap-6 mt-6 pt-6 border-t border-white/10">
               <div className="text-center sm:text-left">
                 <span className="block text-lg font-bold text-white">{userPosts.length}</span>
                 <span className="text-xs text-gray-400">Posts</span>
               </div>
               <div className="text-center sm:text-left">
-                <span className="block text-lg font-bold text-white">{isFollowing ? '1' : '0'}</span>
+                <span className="block text-lg font-bold text-white">{followersCount}</span>
+                <span className="text-xs text-gray-400">Seguidores</span>
+              </div>
+              <div className="text-center sm:text-left">
+                <span className="block text-lg font-bold text-white">{profileData?.followingCount ?? 0}</span>
                 <span className="text-xs text-gray-400">Siguiendo</span>
               </div>
               <div className="text-center sm:text-left">
-                <span className="block text-lg font-bold text-white">{isFriend ? '1' : '0'}</span>
+                <span className="block text-lg font-bold text-white">{friendsCount}</span>
                 <span className="text-xs text-gray-400">Amigos</span>
               </div>
             </div>
